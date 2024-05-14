@@ -16,7 +16,7 @@ library(MCMCvis)
 library(ggplot2)
 library(plotrix)
 
-setwd("C:/Users/kayla/OneDrive/ArcticShorebirds")
+setwd("")
 
 # load model results
 load(file = "amgp_18.Rdata")
