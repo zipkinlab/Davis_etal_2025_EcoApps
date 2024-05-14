@@ -33,5 +33,5 @@ Many Arctic-breeding shorebirds are assumed to be declining, yet obtaining relia
 
 [SESA_IPM.R]() = R script containing model code for the IPM examining Semipalmated sandpiper population dynamics.
 
-[Results]() = This folder contains model results as R data files and code to create figures from the paper. 
+[Figures]() = R script containing code to create figures from the paper. 
 
