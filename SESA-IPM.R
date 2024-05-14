@@ -3,7 +3,7 @@ rm(list = ls())
 # setup ------------------------------------------------------------------------
 # load libraries, set working directory, and load functions
 getwd()
-setwd("C:/Users/kayla/OneDrive/ArcticShorebirds")
+setwd("")
 options(max.print=99999)
 library(openxlsx)
 library(tidyverse)
@@ -27,7 +27,7 @@ B <- dat$minNests # number of nests monitored
 mean(y)
 
 # read in covariate data 
-yeareffects = read.xlsx("CovData/YearCovs.xlsx")
+yeareffects = read.xlsx("YearCovs.xlsx")
 
 #fecundity covs
 snow = yeareffects$Melt
