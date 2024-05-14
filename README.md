@@ -4,7 +4,7 @@
 
 ### 
 
-### Code/Data DOI: [![DOI]()
+### Code/Data DOI: [![DOI]()]
 
 ### Please contact the first author for questions about the code or data: Kayla L. Davis (kayla.louise.davis@gmail.com).
 __________________________________________________________________________________________________________________
