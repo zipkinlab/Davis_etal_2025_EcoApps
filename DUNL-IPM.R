@@ -89,12 +89,6 @@ marray.a <- marray(CH.A)
 # Data provided by 
 # Adapted from original scripts by Marc K?ry & Michael Schaub (2021)
 # See main text for full description of modeling framework
-#
-# Notations:
-# nyears = 18
-# y = number of breeding pairs annually (recorded as minNests)
-# J = number of eggs hatched annually
-
 #############################################################################
 set.seed(123)
 sink("dunl_IPM")
