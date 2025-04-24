@@ -95,14 +95,8 @@ marray.a <- marray(CH.A)
 # Data provided by 
 # Adapted from original scripts by Marc Kery & Michael Schaub (2021)
 # See main text for full description of modeling framework
-#
-# Notations:
-# nyears = 18
-# y = number of breeding pairs annually (recorded as minNests)
-# J = number of eggs hatched annually
-
 #############################################################################
-set.seed(123)
+
 sink("amgp_ipm_18")
 cat("
 model {
@@ -279,7 +273,6 @@ jags.data <- list(zpdo = zpdo, zsnow = zsnow, fox_high = fox_high[3:20],
 
 
 # Initial values
-set.seed(123)
 inits <- function(){list(mphia = runif(1, 0.35, 0.45), mfec = runif(1, 0.5, 1.5), mres = runif(1, 0.3, 0.5), mgamma = rpois(1, 2), 
                          tau.phia = runif(1, 0.5, 2), tau.res = 1, tau.obs = runif(1, 1, 1), 
                          beta.fec1 = rnorm(1, 0, 1), beta.fec2 = rnorm(1, 0, 1), beta.fec3 = rnorm(1, 0, 1), 
