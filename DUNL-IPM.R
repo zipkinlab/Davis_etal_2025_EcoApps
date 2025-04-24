@@ -16,7 +16,7 @@ library(plotrix)
 
 # the data ---------------------------------------------------------------------
 dir()
-dat <- read.csv("dunl_nests_2003_2022_18.csv")
+dat <- read.csv("dunl_nests_2005_2022_18.csv")
 
 # breeding pairs and productivity
 year <- dat$year
@@ -75,7 +75,7 @@ marray <- function(CH){
 ########################################################################
 
 #read in capture histories for birds marked as adults during 2003-2022
-CH.A <- read.table("DUNL_ad_2003_2022_18.txt")
+CH.A <- read.table("DUNL_ad_2005_2022_18.txt")
 
 #convert to matrix
 CH.A <- data.matrix(CH.A)
@@ -129,12 +129,12 @@ model {
     
 
     # Precision of standard deviations of temporal variability
-    sig.phia ~ dunif(0, 5)
-    tau.phia <- pow(sig.phia, -2) 
-    sig.res ~ dunif(0, 5)
-    tau.res <- pow(sig.res, -2)
-    sig.obs ~ dunif(0.5, 5)   # residual variance
-    tau.obs <- pow(sig.obs, -2)
+    tau.phia ~ dgamma(2,0.25)
+    sd.phia <- 1 / sqrt(tau.phia)
+    tau.res ~ dgamma(2,0.25)
+    sd.res <- 1 / sqrt(tau.res)
+    tau.obs ~ dgamma(2,2)
+    sd.obs <- 1 / sqrt(tau.obs)
 
     # Distribution of error terms (Bounded to help with convergence)
     for (t in 1:(nyears-1)){
@@ -158,25 +158,22 @@ model {
     p[15] <- 0 
     
     for (t in (nyears-2):(nyears-1)){
-    logit(p[t]) <- l.mres + epsilon.res[t] 
+    logit(p[t]) <- l.mres + epsilon.res[t]
     }
     
     for (t in 1:nyears){
-    log(f[t]) <- l.mfec +  beta.fec1 * zsnow[t] +  beta.fec2 * (zsnow[t]^2) + beta.fec3 * fox_high[t] #+ epsilon.fec[t] 
+    log(f[t]) <- l.mfec +  beta.fec1 * zsnow[t] +  beta.fec2 * (zsnow[t]^2) + beta.fec3 * fox_high[t] 
     } 
     
-    for (t in 2:nyears){
-    log(gamma[t]) <- l.mgamma + beta.gam1 * zsnow[t] + beta.gam2 * (zsnow[t]^2) + beta.gam3 * ((f[t-1] - mean(f))/sd(f)) #+ epsilon.gam[t]
+    for (t in 3:nyears){
+    log(gamma[t]) <- l.mgamma + beta.gam1 * zsnow[t] + beta.gam2 * (zsnow[t]^2) + beta.gam3 * ((f[t-2] - mean(f))/sd(f)) 
      }
     
     #-----------------------
     # 3. Derived parameters
     #-----------------------
-    mean.phia <- exp(l.mphia)/(1+exp(l.mphia))        # Mean adult survival
-    mean.fec <- mean(f)           # Mean productivity/hatchling counts
     mean.fec.nofox <- exp(l.mfec)
     mean.fec.fox <- exp(l.mfec + beta.fec3)
-    mean.gam <- exp(l.mgamma)                       # Mean number of immigrants
 
     # Population growth rate (total adult breeders [1+ y olds])
     for (t in 1:(nyears-1)){
@@ -191,15 +188,15 @@ model {
     mlam.fox <- exp((1/(nyears-6))*sum(logla[c(2:13)]))   # Geo mean fox control yrs
     mlam.no <- exp((1/(nyears-14))*sum(logla[c(14:(nyears-1))]))
     
-    #predictions over new values for snow (100 from min to max zsnow) for mean fec (gam) and no fox control (fec)
+    # predictions over new values for snow (100 from min to max zsnow) for mean fec (gam) and no fox control (fec)
     for (i in 1:nz){
-    l.gam.pred[i] <- l.mgamma + beta.gam1 * z[i] + beta.gam2 * (z[i]^2)
-    gam.pred[i] <- exp(l.gam.pred[i])
-    l.fec.pred[i] <- l.mfec + beta.fec1 * z[i] + beta.fec2 * (z[i]^2)
-    fec.pred[i]<- exp(l.fec.pred[i])
-    l.phia.pred[i] <- l.mphia + beta.phia1 * mean(zpdo) + beta.phia2 * z[i] + beta.phia3 * mean(zsnow)
-    phia.pred[i] <- ilogit(l.phia.pred[i])
-    }
+     l.gam.pred[i] <- l.mgamma + beta.gam1 * z[i] + beta.gam2 * (z[i]^2)
+     gam.pred[i] <- exp(l.gam.pred[i])
+     l.fec.pred[i] <- l.mfec + beta.fec1 * z[i] + beta.fec2 * (z[i]^2)
+     fec.pred[i]<- exp(l.fec.pred[i])
+     l.phia.pred[i] <- l.mphia + beta.phia1 * mean(zpdo) + beta.phia2 * z[i] + beta.phia3 * mean(zsnow)
+     phia.pred[i] <- ilogit(l.phia.pred[i])
+     }
     
     #--------------------------------------------
     # 4. The likelihoods of the single data sets
@@ -209,16 +206,16 @@ model {
     
     # Model for initial population size (year 1)
       Nad[1] ~ dpois(y[1])
-      
+      Nad[2] ~ dpois(y[2])
     
     # For years 2-20
-    for (t in 2:nyears){
+    for (t in 3:nyears){
       S[t] ~ dbin(phia[t-1], Nad[t-1])   # No. surviving adults
       I[t] ~ dpois(gamma[t])             # No. immigrants
       }
 
     # Observation process
-    for (t in 2:nyears){
+    for (t in 3:nyears){
       Nad[t] <- S[t] + I[t]     # Total number of breeding pairs
       y[t] ~ dnorm(Nad[t], tau.obs) #changed from dnorm to poison to test
       }
@@ -268,22 +265,23 @@ y
 # Initial values
 set.seed(123)
 inits <- function(){list(mphia = runif(1, 0.55, 0.58), mfec = runif(1, 0, 2), mres = runif(1, 0, 0.5),mgamma = runif(1, 1, 10),  
-                         sig.phia = runif(1, 0.5, 0.6), sig.obs = runif(1, 3, 5), 
+                         tau.phia = runif(1, 0.5, 0.6), tau.obs = runif(1, 3, 5), 
                          beta.fec1 = rnorm(1, 0, 1), beta.fec2 = rnorm(1, 0, 1), beta.fec3 = rnorm(1, 0, 1), 
                          beta.phia1 = rnorm(1, 0, 1), beta.phia2 = rnorm(1, 0, 1), beta.phia3 = rnorm(1, 0, 1), 
                          beta.gam1 = rnorm(1, 0, 1), beta.gam2 = rnorm(1, 0, 1), beta.gam3 = rnorm(1, 0, 1))} 
 
 
 # Parameters monitored
-parameters <- c("phia","f","lambda", "gamma",
-                "mean.phia","mean.fec","mean.fec.fox", "mean.fec.nofox","mean.gam", 
+parameters <- c("phia","f","lambda", "gamma","p",
+                "mean.fec.nofox","mean.gam", 
                 "mlam", "mlam.five", "mlam.ten", "mlam.fox", "mlam.no",
                  "mphia","mfec", "mres", "mgamma",
-                "sig.phia", "sig.obs", "epsilon.phia", "epsilon.res", 
+                "tau.phia","tau.res", "tau.obs", "epsilon.phia", "epsilon.res", 
                 "beta.phia1", "beta.phia2", "beta.phia3", 
                 "beta.fec1","beta.fec2", "beta.fec3", 
                 "beta.gam1","beta.gam2", "beta.gam3",
                 "S",  "I", "Nad", "gam.pred", "fec.pred", "phia.pred")
+
 
 # MCMC settings
 # ni <- 1000000   
@@ -304,7 +302,6 @@ nadapt <- 100
 
 # Call JAGS from R
 library(jagsUI)
-set.seed(123)
 dunl <- jags(jags.data, inits, parameters, "dunl_IPM", n.adapt = nadapt, n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = nb, parallel = TRUE, store.data = TRUE)
 
 dunl
@@ -316,11 +313,6 @@ save(dunl, file="dunl_18.Rdata")
 plot(dunl)
 par(mfrow = c(1,1))
 
-traceplot(dunl, parameter="gamma")
-traceplot(dunl, parameter="phia")
-traceplot(dunl, parameter="lambda")
-traceplot(dunl, parameter="sig.obs")
-traceplot(dunl, parameter="beta.gam3")
 
 MCMCsummary(dunl,
             params = c("beta.phia1","beta.phia2","beta.phia3","beta.fec1", "beta.fec2","beta.fec3",
@@ -328,7 +320,6 @@ MCMCsummary(dunl,
             probs = c(0.025, 0.05, 0.075, 0.1,0.25, 0.5, 0.75, 0.9, 0.925, 0.95, 0.975),
             round = 2)
 
-dev.off()
 
 
 # post-processing ---------------------------------------------------------------------
