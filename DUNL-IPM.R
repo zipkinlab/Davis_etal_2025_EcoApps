@@ -278,18 +278,18 @@ parameters <- c("phia","f","lambda", "gamma","p",
 
 
 # MCMC settings
-# ni <- 1000000   
-# nt <- 10
-# nb <- 900000
-# nc <- 3
-# nadapt <- 500000
+ni <- 250000
+nt <- 10
+nb <- 150000
+nc <- 3
+nadapt <- 10000
 
 # Testing
-ni <- 1000   
-nt <- 2
-nb <- 200
-nc <- 3
-nadapt <- 100
+# ni <- 1000   
+# nt <- 2
+# nb <- 200
+# nc <- 3
+# nadapt <- 100
 
 
 
