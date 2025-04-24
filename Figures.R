@@ -43,9 +43,9 @@ MCMCsummary(sesa,
             round = 2)
 
 #load pair data
-sesa.dat <- read.csv("SESA_nests_2003_2022_18.csv")
-dunl.dat <- read.csv("dunl_nests_2003_2022_18.csv")
-amgp.dat <- read.csv("amgp_nests_2003_2022_18.csv")
+sesa.dat <- read.csv("SESA_nests_2005_2022_18.csv")
+dunl.dat <- read.csv("dunl_nests_2005_2022_18.csv")
+amgp.dat <- read.csv("amgp_nests_2005_2022_18.csv")
 
 # breeding pairs and productivity
 amgp.pr <- amgp.dat$minPairs 
@@ -53,7 +53,7 @@ dunl.pr <- dunl.dat$minPairs
 sesa.pr <- sesa.dat$minPairs 
 
 # read in covariate data 
-yeareffects = read.xlsx("CovData/YearCovs.xlsx")
+yeareffects = read.xlsx("YearCovs.xlsx")
 
 #name covariates for fecundity and adult survival
 snow = yeareffects$Melt[3:20]
