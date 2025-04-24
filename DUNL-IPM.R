@@ -90,7 +90,7 @@ marray.a <- marray(CH.A)
 # Adapted from original scripts by Marc K?ry & Michael Schaub (2021)
 # See main text for full description of modeling framework
 #############################################################################
-set.seed(123)
+
 sink("dunl_IPM")
 cat("
 model {
@@ -257,7 +257,6 @@ jags.data <- list(zpdo = zpdo, zsnow = zsnow, fox_high = fox_high[3:20],
 y
 
 # Initial values
-set.seed(123)
 inits <- function(){list(mphia = runif(1, 0.55, 0.58), mfec = runif(1, 0, 2), mres = runif(1, 0, 0.5),mgamma = runif(1, 1, 10),  
                          tau.phia = runif(1, 0.5, 0.6), tau.obs = runif(1, 3, 5), 
                          beta.fec1 = rnorm(1, 0, 1), beta.fec2 = rnorm(1, 0, 1), beta.fec3 = rnorm(1, 0, 1), 
