@@ -16,7 +16,7 @@ library(plotrix)
 
 # the data ---------------------------------------------------------------------
 dir()
-dat <- read.csv("SESA_nests_2003_2022_18.csv")
+dat <- read.csv("SESA_nests_2005_2022_18.csv")
 
 # breeding pairs and productivity
 year <- dat$year
@@ -75,7 +75,7 @@ marray <- function(CH){
 
 
 #read in capture histories for birds marked as adults during 2003-2022
-CH.A <- read.table("SESA_ad_2003_2022_18.txt")
+CH.A <- read.table("SESA_ad_2005_2022_18.txt")
 
 #convert to matrix
 CH.A <- data.matrix(CH.A)
@@ -90,14 +90,8 @@ marray.a <- marray(CH.A)
 # Data provided by 
 # Adapted from original scripts by Marc K?ry & Michael Schaub (2021)
 # See main text for full description of modeling framework
-#
-# Notations:
-# nyears = 18
-# y = number of breeding pairs annually (recorded as minNests)
-# J = number of eggs hatched annually
-
 #############################################################################
-set.seed(1)
+
 sink("sesa_18")
 cat("
 model {
@@ -129,14 +123,13 @@ model {
     beta.gam3 ~ dnorm(0, 0.1)
 
   
-
     # Precision of standard deviations of temporal variability
-    sig.phia ~ dunif(0, 5)
-    tau.phia <- pow(sig.phia, -2) 
-    sig.res ~ dunif(0, 5)
-    tau.res <- pow(sig.res, -2)
-    sig.obs ~ dunif(0.5, 5)   # residual variance
-    tau.obs <- pow(sig.obs, -2)
+    tau.phia ~ dgamma(2,0.5)
+    sd.phia <- 1 / sqrt(tau.phia)
+    tau.res ~ dgamma(2,0.25)
+    sd.res <- 1 / sqrt(tau.res)
+    tau.obs ~ dgamma(2,2)
+    sd.obs <- 1 / sqrt(tau.obs)
 
 
     # Distribution of error terms (Bounded to help with convergence)
@@ -169,8 +162,8 @@ model {
     log(f[t]) <- l.mfec +  beta.fec1 * zsnow[t] + beta.fec2 * (zsnow[t]^2) + beta.fec3 * fox_high[t] 
     } 
     
-    for (t in 2:nyears){
-    log(gamma[t]) <- l.mgamma + beta.gam1 * zsnow[t] + beta.gam2 * (zsnow[t]^2) + beta.gam3 * ((f[t-1] - mean(f))/sd(f))
+    for (t in 3:nyears){
+    log(gamma[t]) <- l.mgamma + beta.gam1 * zsnow[t] + beta.gam2 * (zsnow[t]^2) + beta.gam3 * ((f[t-2] - mean(f))/sd(f))
                   
     }
    
@@ -178,12 +171,10 @@ model {
     #-----------------------
     # 3. Derived parameters
     #-----------------------
-    mean.phia <- exp(l.mphia)/(1+exp(l.mphia))        # Mean adult survival 
-    mean.fec <- mean(f)              # Mean productivity/hatchling counts
+
     mean.fec.nofox <- exp(l.mfec)                   
     mean.fec.fox <- exp(l.mfec + beta.fec3)
-    mean.gam <- exp(l.mgamma)                       # Mean number of immigrants
-    mean.p <- exp(l.mres)/(1+exp(l.mres))
+
 
     # Population growth rate (total adult breeders [1+ y olds])
     for (t in 1:(nyears-1)){
@@ -204,7 +195,7 @@ model {
     gam.pred[i] <- exp(l.gam.pred[i])
     l.fec.pred[i] <- l.mfec + beta.fec1 * z[i] + beta.fec2 * (z[i]^2)
     fec.pred[i]<- exp(l.fec.pred[i])
-    l.phia.pred[i] <- l.mphia + beta.phia1 * mean(zpdo) + beta.phia2 * z[i] + beta.phia3 * mean(zsnow)
+    l.phia.pred[i] <- l.mphia + beta.phia1 * mean(zpdo) + beta.phia2 * mean(zsnow) + beta.phia3 * z[i]
     phia.pred[i] <- ilogit(l.phia.pred[i])
     l.pdo.pred[i] <- l.mphia + beta.phia1 * zp[i] + beta.phia2 * mean(zsnow) + beta.phia3 * mean(zsnow)
     pdo.pred[i] <- ilogit(l.pdo.pred[i])
@@ -218,15 +209,16 @@ model {
     
     # Model for initial adult population size (year 1)
       Nad[1] ~ dpois(y[1])
-    
+      Nad[2] ~ dpois(y[2])
+      
     # For years 2-20
-    for (t in 2:nyears){
+    for (t in 3:nyears){
       S[t] ~ dbin(phia[t-1], Nad[t-1])      # No. surviving adults
       I[t] ~ dpois(gamma[t])               # No. immigrants
       }
 
     # Observation process
-    for (t in 2:nyears){
+    for (t in 3:nyears){
       Nad[t] <- S[t] + I[t]       # Total number of breeding pairs
       y[t] ~ dnorm(Nad[t], tau.obs)T(0,100)
       }
@@ -274,38 +266,37 @@ jags.data <- list(zpdo = zpdo, zsnow = zsnow, fox_high = fox_high[3:20],
 
 
 # Initial values
-set.seed(1)
 inits <- function(){list(mphia = runif(1, 0.45, 0.55), mfec = runif(1, 0, 2), mres = runif(1, 0, 0.5), mgamma = runif(1, 1, 10), 
-                         sig.phia = runif(1, 0.5, 5), sig.obs = runif(1, 2, 4), 
+                         tau.phia = runif(1, 0.5, 5), tau.obs = runif(1, 2, 4), 
                          beta.fec1 = rnorm(1, 0, 1), beta.fec2 = rnorm(1, 0, 1), beta.fec3 = rnorm(1, 0, 1), 
                          beta.phia1 = rnorm(1, 0, 1), beta.phia2 = rnorm(1, 0, 1), beta.phia3 = rnorm(1, 0, 1), 
-                         beta.gam1 = rnorm(1, 0, 1), beta.gam2 = rnorm(1, 0, 1), beta.gam3 = rnorm(1, 0, 1))} 
+                         beta.gam1 = rnorm(1, 0, 1), beta.gam2 = rnorm(1, 0, 1), beta.gam3 = rnorm(1, 0, 1))}  
 
 
 # Parameters monitored
 parameters <- c("phia","f","lambda", "gamma", "p",
-                "mean.phia","mean.fec","mean.fec.fox", "mean.fec.nofox", "mean.gam", "mean.p", 
+                "mean.fec.fox", "mean.fec.nofox",  
                 "mlam", "mlam.five", "mlam.ten", "mlam.fox", "mlam.no",
                 "mphij", "mphia","mfec", "mres", "mgamma",
-                "sig.phia", "sig.obs", "epsilon.phia", "epsilon.res",
+                "tau.phia", "tau.res", "tau.obs", "epsilon.phia", "epsilon.res",
                 "beta.phia1", "beta.phia2", "beta.phia3", 
                 "beta.fec1","beta.fec2", "beta.fec3", 
                 "beta.gam1","beta.gam2", "beta.gam3",
                 "S", "R", "I", "Nad", "Nck", "gam.pred", "fec.pred", "phia.pred", "pdo.pred")
 
 # MCMC settings
-# ni <- 1000000   
-# nt <- 10
-# nb <- 900000
-# nc <- 3
-# nadapt <- 500000
+ni <- 250000
+nt <- 10
+nb <- 150000
+nc <- 3
+nadapt <- 10000
 
 # Testing
-ni <- 1000   
-nt <- 2
-nb <- 200
-nc <- 3
-nadapt <- 100
+# ni <- 1000   
+# nt <- 2
+# nb <- 200
+# nc <- 3
+# nadapt <- 100
 
 # Call JAGS from R
 library(jagsUI)
@@ -319,17 +310,6 @@ save(sesa, file="sesa_18.Rdata")
 # check out results
 plot(sesa)
 par(mfrow = c(1,1))
-traceplot(sesa, parameter="phia")
-traceplot(sesa, parameter="gamma")
-traceplot(sesa, parameter="Nad")
-traceplot(sesa, parameter="I")
-traceplot(sesa, parameter="lambda")
-traceplot(sesa, parameter="sig.obs")
-traceplot(sesa, parameter="deviance")
-traceplot(sesa, parameter="f")
-traceplot(sesa, parameter="S")
-  
-
 
 MCMCsummary(sesa,
             params = c("beta.phia1","beta.phia2","beta.phia3","beta.fec1", "beta.fec2", "beta.fec3","beta.gam1", "beta.gam2", "beta.gam3"),
