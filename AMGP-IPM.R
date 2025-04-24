@@ -17,7 +17,7 @@ library(jagsUI)
 
 # the data ---------------------------------------------------------------------
 dir()
-dat <- read.csv("amgp_nests_2003_2022_18.csv")
+dat <- read.csv("amgp_nests_2005_2022_18.csv")
 
 # breeding pairs and productivity
 year <- dat$year
@@ -81,7 +81,7 @@ marray <- function(CH){
 ########################################################################
 
 #read in capture histories for birds marked as adults during 2003-2022
-CH.A <- read.table("AMGP_ad_2003_2022_18.txt")
+CH.A <- read.table("AMGP_ad_2005_2022_18.txt")
 
 #convert to matrix
 CH.A <- data.matrix(CH.A)
@@ -128,8 +128,7 @@ model {
     beta.phia1 ~ dnorm(0, 0.1)
     beta.phia2 ~ dnorm(0, 0.1)
     beta.phia3 ~ dnorm(0, 0.1)
-
-    
+ 
     beta.gam1 ~ dnorm(0, 0.1)
     beta.gam2 ~ dnorm(0, 0.1)
     beta.gam3 ~ dnorm(0, 0.1)
@@ -138,12 +137,13 @@ model {
   
 
     # Precision of standard deviations of temporal variability
-    sig.phia ~ dunif(0, 5)
-    tau.phia <- pow(sig.phia, -2) 
-    sig.res ~ dunif(0, 5)
-    tau.res <- pow(sig.res, -2)
-    sig.obs ~ dunif(0.5, 5)   # residual variance
-    tau.obs <- pow(sig.obs, -2)
+    tau.phia ~ dgamma(2,.25)
+    sd.phia <- 1 / sqrt(tau.phia)
+    tau.res ~ dgamma(2,.25)
+    sd.res <- 1 / sqrt(tau.res)
+    tau.obs ~ dgamma(2,2)
+    sd.obs <- 1 / sqrt(tau.obs)
+
 
 
     # Distribution of error terms (Bounded to help with convergence)
@@ -281,36 +281,38 @@ jags.data <- list(zpdo = zpdo, zsnow = zsnow, fox_high = fox_high[3:20],
 # Initial values
 set.seed(123)
 inits <- function(){list(mphia = runif(1, 0.35, 0.45), mfec = runif(1, 0.5, 1.5), mres = runif(1, 0.3, 0.5), mgamma = rpois(1, 2), 
-                         sig.phia = runif(1, 0.5, 5), sig.obs = runif(1, 1, 3), 
+                         tau.phia = runif(1, 0.5, 2), tau.res = 1, tau.obs = runif(1, 1, 1), 
                          beta.fec1 = rnorm(1, 0, 1), beta.fec2 = rnorm(1, 0, 1), beta.fec3 = rnorm(1, 0, 1), 
-                         beta.phia1 = rnorm(1, 0, 1), beta.phia2 = rnorm(1, 0, 1), beta.phia3 = rnorm(1, 0, 1), 
+                         beta.phia1 = rnorm(1, 0, 1), beta.phia2 = rnorm(1, 0, 1), beta.phia3 = rnorm(1, 0, 1),
+                         beta.p1 = rnorm(1, 0, 1), beta.p2 = rnorm(1, 0, 1),
                          beta.gam1 = rnorm(1, 0, 1), beta.gam2 = rnorm(1, 0, 1), beta.gam3 = rnorm(1, 0, 1))} 
 
 
 # Parameters monitored
-parameters <- c("phia","f","lambda", "gamma",
+parameters <- c("phia","f","lambda", "gamma","p",
                 "mean.phia","mean.fec", "mean.fec.fox", "mean.fec.nofox", "mean.gam", 
                 "mlam", "mlam.five", "mlam.ten", "mlam.fox", "mlam.no",
                 "mphia","mfec", "mres", "mgamma",
-                "sig.phia", "sig.obs","epsilon.phia", "epsilon.res",
+                "tau.phia", "tau.res", "tau.obs","epsilon.phia", "epsilon.res",
                 "beta.phia1", "beta.phia2", "beta.phia3", 
                 "beta.fec1","beta.fec2", "beta.fec3", 
                 "beta.gam1","beta.gam2", "beta.gam3", 
                 "S", "R", "I", "Nad", "Nck", "gam.pred", "fec.pred", "pdo.pred")
 
+
 # MCMC settings
-# ni <- 1000000   
-# nt <- 10
-# nb <- 900000
-# nc <- 3
-# nadapt <- 500000
+ni <- 250000
+nt <- 10
+nb <- 150000
+nc <- 3
+nadapt <- 10000
 
 # Testing
-ni <- 1000   
-nt <- 2
-nb <- 200
-nc <- 3
-nadapt <- 100
+# ni <- 1000   
+# nt <- 2
+# nb <- 200
+# nc <- 3
+# nadapt <- 100
 
 # Call JAGS from R
 amgp <- jags(jags.data, inits, parameters, "amgp_ipm_18", n.adapt = nadapt, n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = nb, parallel = TRUE, store.data = TRUE)
@@ -324,11 +326,6 @@ save(amgp, file="amgp_18.Rdata")
 # check out results
 plot(amgp)
 par(mfrow = c(1,1))
-
-traceplot(amgp, parameter="gamma")
-traceplot(amgp, parameter="lambda")
-traceplot(amgp, parameter="f")
-traceplot(amgp, parameter="Ntot")
 
 
 MCMCsummary(amgp,
