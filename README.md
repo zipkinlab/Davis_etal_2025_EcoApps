@@ -2,7 +2,7 @@
 
 ### [Kayla L. Davis](https://github.com/davisk93), Richard B. Lanctot, Sarah T. Saalfeld, [Elise F. Zipkin](https://zipkinlab.org/)
 
-### 
+### Ecological Applications
 
 ### Code/Data DOI: [![DOI](https://zenodo.org/badge/800600181.svg)](https://doi.org/10.5281/zenodo.15277230)
 
