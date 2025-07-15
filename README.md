@@ -13,8 +13,6 @@ Many Arctic‐breeding shorebirds are assumed to be declining, yet obtaining rel
 
 Keywords: Arctic-breeding shorebirds, demographic rate synchrony, integrated population model, nonbreeding season
 
-![image](https://github.com/user-attachments/assets/17e2290b-6275-4779-9697-e28fa528ed04)
-
 ## Data
 [amgp_nests_2005_2022_18.csv](https://github.com/davisk93/Davis-et-al-Arctic-breeding-Shorebird-IPM/blob/main/amgp_nests_2005_2022_18.csv) = Nest counts used for population size and productivity data for American golden-plover. 
 
