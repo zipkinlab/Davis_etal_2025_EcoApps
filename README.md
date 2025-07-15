@@ -6,6 +6,8 @@
 
 ### Code/Data DOI: [![DOI](https://zenodo.org/badge/800600181.svg)](https://doi.org/10.5281/zenodo.15277230)
 
+### [Published PDF](https://github.com/zipkinlab/Davis_etal_2025_EcoApps/blob/0bfba4c77a118630642148d6ee9132828cad2048/Davis%20et%20al.%202025_Eco%20Apps.pdf)
+
 ### Please contact the first author for questions about the code or data: Kayla L. Davis (kayla.louise.davis@gmail.com).
 __________________________________________________________________________________________________________________
 ## Abstract
